@@ -11,7 +11,7 @@ app.get("/get", async (req, res) => {
 
   try {
     const cleanUrl = url.split("?")[0];
-    const api = `https://api.tikmate.app/api/lookup?url=${encodeURIComponent(cleanUrl)}`;
+    const apiUrl = `https://tikmate.online/api/lookup?url=${encodeURIComponent(videoUrl)}`;
     const response = await fetch(api);
     const data = await response.json();
 
