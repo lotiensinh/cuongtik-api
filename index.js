@@ -1,30 +1,40 @@
 const express = require("express");
 const cors = require("cors");
-const fetch = require("node-fetch");
 
 const app = express();
+const PORT = process.env.PORT || 3000;
+
 app.use(cors());
 
 app.get("/get", async (req, res) => {
-  const { url } = req.query;
-  if (!url) return res.status(400).json({ error: "Thiếu URL" });
+  const videoUrl = req.query.url;
+  if (!videoUrl) {
+    return res.status(400).json({ error: "Thiếu URL video TikTok" });
+  }
 
   try {
-    const cleanUrl = url.split("?")[0];
-    const apiUrl = `https://tikmate.online/api/lookup?url=${encodeURIComponent(videoUrl)}`;
-    const response = await fetch(api);
-    const data = await response.json();
+    const lookupRes = await fetch(`https://tikmate.online/api/lookup?url=${encodeURIComponent(videoUrl)}`);
+    const text = await lookupRes.text();
 
-    if (data?.token && data?.id) {
-      const videoUrl = `https://tikmate.app/download/${data.token}/${data.id}.mp4`;
-      res.json({ video_url: videoUrl });
-    } else {
-      res.status(400).json({ error: "Không lấy được video", data });
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (err) {
+      return res.status(500).json({ error: "Lỗi server", detail: "Phản hồi không phải JSON từ TikMate", raw: text });
     }
+
+    if (!data.token || !data.id) {
+      return res.status(400).json({ error: "Không lấy được video từ TikMate", data });
+    }
+
+    const videoDownloadUrl = `https://tikmate.online/download/${data.token}/${data.id}.mp4`;
+
+    return res.status(200).json({ videoUrl: videoDownloadUrl });
   } catch (err) {
-    res.status(500).json({ error: "Lỗi server", detail: err.message });
+    return res.status(500).json({ error: "Lỗi server", detail: err.message });
   }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
+});
